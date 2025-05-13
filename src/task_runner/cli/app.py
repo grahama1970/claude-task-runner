@@ -106,7 +106,7 @@ def run(
         False, "--raw-json", help="Output raw JSON format instead of human-friendly text"
     ),
     no_table_repeat: bool = typer.Option(
-        False, "--no-table-repeat", help="Display the table only once, don't repeat after each task (better with streaming)"
+        False, "--no-table-repeat", help="Display the dashboard once at the beginning instead of before each task"
     ),
 ):
     """
@@ -199,49 +199,15 @@ def run(
                 ]:
                     continue
                 
-                # Always show a clear separator between tasks
-                print("\n" + "=" * 80)
-                print_info(f"Starting task: {task_name}")
-                print("-" * 80 + "\n")
-                
-                # Run the task with appropriate settings
-                task_timeout = 30 if quick_demo else timeout
-                # We should never use quiet mode when using streaming
-                # The table redraw issue is handled by the no_table_repeat flag instead
-                use_quiet = False
-                
-                success, _ = manager.run_task(
-                    task_file, 
-                    task_timeout, 
-                    fast_mode=False, 
-                    demo_mode=quick_demo, 
-                    use_streaming=not no_streaming,
-                    raw_json=raw_json,
-                    quiet=use_quiet
-                )
-                
-                # Always print a clear separator for task completion
-                print("\n" + "-" * 80)
-                
-                # Show status update based on the chosen mode
+                # First, determine if we're showing the dashboard once or for each task
                 if no_table_repeat:
-                    # Just print a simple status update
-                    if success:
-                        print_success(f"Task {task_name} completed successfully")
-                    else:
-                        print_error(f"Task {task_name} failed")
-                        
-                    # Brief pause to allow reading the status
-                    time.sleep(0.5)
-                    
-                    # Optionally print a minimal summary of progress
-                    summary = manager.get_task_summary()
-                    completed = summary['completed']
-                    total = summary['total']
-                    print_info(f"Progress: {completed}/{total} tasks completed ({int(completed/total*100)}%)")
+                    # Just print a task header - we already showed the dashboard at the start
+                    print("\n" + "=" * 80)
+                    print_info(f"Starting task: {task_name}")
+                    print("-" * 80 + "\n")
                 else:
-                    # Show updated status after task completes with full dashboard
-                    print("\n")
+                    # Show/update dashboard before each task
+                    print("\n\n")
                     components = create_dashboard(
                         manager.task_state,
                         manager.current_task,
@@ -252,8 +218,34 @@ def run(
                     for component in components:
                         console.print(component)
                     
-                    # Wait between tasks
-                    time.sleep(1)
+                    print("\n" + "=" * 80)
+                    print_info(f"Claude output for task: {task_name}")
+                    print("-" * 80 + "\n")
+                
+                # Run the task with streaming enabled
+                task_timeout = 30 if quick_demo else timeout
+                # Never use quiet mode - we always want to see Claude's output
+                success, _ = manager.run_task(
+                    task_file, 
+                    task_timeout, 
+                    fast_mode=False, 
+                    demo_mode=quick_demo, 
+                    use_streaming=not no_streaming,
+                    raw_json=raw_json,
+                    quiet=False
+                )
+                
+                # Print a separator after task completion
+                print("\n" + "-" * 80)
+                
+                # Show completion message with status
+                if success:
+                    print_success(f"Task {task_name} completed successfully")
+                else:
+                    print_error(f"Task {task_name} failed")
+                
+                # Add a small pause between tasks
+                time.sleep(0.5)
             
             # Final status
             summary = manager.get_task_summary()

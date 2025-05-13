@@ -1,6 +1,6 @@
 #!/bin/bash
-# Run script to test the streamlined UI that doesn't repeat the dashboard after each task
-# This script creates a sample task and runs it with our improved UI
+# Run script to test the streamlined UI that shows the dashboard only once at the beginning
+# This script creates sample tasks and runs them with a single dashboard display
 
 # Ensure we're running from the project root
 cd "$(dirname "$0")" || exit 1
