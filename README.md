@@ -30,71 +30,35 @@ The Claude Task Runner uses a clean, modular architecture with real-time streami
 
 ```mermaid
 flowchart TD
-    %% Define nodes with better contrast for light/dark modes - grouped by function
-    classDef userNode fill:#f5f5f5,stroke:#333,color:#333,margin:15px
-    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000,margin:15px
-    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#000,margin:15px
-    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000,margin:15px
-    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#000,margin:15px
-    classDef containerNode fill:transparent,stroke:#666,color:#666
-    classDef legendNode fill:transparent,stroke:transparent,color:#666
-    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,margin:15px,stroke-dasharray: 5 5
-
-    %% Main components with emojis and extra padding using non-breaking spaces
-    User["👤   User   "]:::userNode
-    TaskListFile["📝   Task List File   "]:::dataNode
+    %% Define node styles - clean and simple
+    classDef userNode fill:#f5f5f5,stroke:#333,color:#333
+    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000
+    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#fff
+    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000
+    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#fff
+    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,stroke-dasharray: 5 5
     
-    subgraph CLI["🖥️  CLI Layer  "]
-        CLI_Interface["🔌   CLI Interface   "]:::interfaceNode
-        Status_Dashboard["📊   Status Dashboard   "]:::interfaceNode
-    end
+    %% Main components in vertical layout
+    User["👤 User"]:::userNode
+    TaskList["📝 Task List File"]:::dataNode
+    TaskFiles["📁 Individual Task Files"]:::storageNode
+    TaskRunner["📋 Task Runner"]:::coreNode
+    Dashboard["📊 Status Dashboard"]:::interfaceNode
+    ClaudeCode["🤖 Claude Code"]:::externalNode
+    ResultsFiles["📄 Results Files"]:::storageNode
     
-    subgraph Core["⚙️  Core Components  "]
-        Task_Manager["📋   Task Manager   "]:::coreNode
-        Claude_Streamer["🔄   Claude Streamer   "]:::coreNode
-    end
+    %% The actual workflow in 6 steps - vertical layout
+    User -->|"Creates"| TaskList
+    TaskList -->|"Breaks down into"| TaskFiles
+    TaskFiles -->|"Iterates over each"| TaskRunner
+    TaskRunner -->|"Updates"| Dashboard
+    TaskRunner -->|"Sends task to"| ClaudeCode
+    ClaudeCode -->|"Results & /clear"| ResultsFiles
+    ResultsFiles -->|"Completes task & updates"| TaskRunner
     
-    subgraph Storage["💾  Storage Layer  "]
-        Task_Files["📁   Individual Task Files   "]:::storageNode
-        Results_Files["📄   Results Files   "]:::storageNode
-    end
-    
-    subgraph External["🔗  External Components  "]
-        Claude_Code["🤖   Claude Code   "]:::externalNode
-    end
-    
-    %% User journey flow - more detailed, sequential steps
-    User -->|"1. Creates project with task list"| TaskListFile
-    User -->|"2. Runs CLI command"| CLI_Interface
-    CLI_Interface -->|"3. Passes task list"| Task_Manager
-    TaskListFile -->|"Input"| Task_Manager
-    
-    %% Task processing flow
-    Task_Manager -->|"4. Parses & extracts individual tasks"| Task_Files
-    Task_Manager -->|"5. Processes each task sequentially"| Claude_Streamer
-    Task_Files -->|"6. Loads each task"| Claude_Streamer
-    Claude_Streamer -->|"7. Sends to"| Claude_Code
-    Claude_Code -->|"8. Returns output"| Claude_Streamer
-    Claude_Streamer -->|"9. Saves results"| Results_Files
-    
-    %% Status updates
-    Claude_Streamer -->|"10. Sends completion status"| Task_Manager
-    Task_Manager -->|"11. Updates dashboard"| Status_Dashboard
-    Status_Dashboard -->|"12. Displays progress to"| User
-    Results_Files -->|"13. Available for"| User
-    
-    %% Add Legend with extra padding
-    subgraph Legend["Legend"]
-        User_Legend["👤   User Interface   "]:::userNode
-        Interface_Legend["🔌   CLI Components   "]:::interfaceNode
-        Core_Legend["⚙️   Core System   "]:::coreNode
-        Storage_Legend["💾   Storage   "]:::storageNode
-        External_Legend["🔗   External Services   "]:::externalNode
-        Data_Legend["📝   Input/Output Data   "]:::dataNode
-    end
-    
-    %% Apply container styling
-    class CLI,Core,Storage,External,Legend containerNode
+    %% Loop back for next task
+    TaskRunner -.->|"Repeats for next task"| TaskFiles
+    Dashboard -->|"Shows progress to"| User
 ```
 
 ## Why Use Claude Task Runner?
@@ -137,6 +101,10 @@ After installation, restart Claude Desktop and ensure you see the hammer icon in
 - **Execution Control**: Run tasks individually or in sequence, with result management
 - **Status Tracking**: Monitor project progress and task completion status
 - **Modern CLI**: Intuitive command-line interface with rich formatting
+- **Multiple Dashboard Options**: 
+  - Modern Textual-based interactive dashboard UI with fixed header and scrolling output area
+  - Real-time task status with color-coded indicators
+  - Markdown rendering for Claude output with proper formatting
 - **MCP Integration**: Seamless integration with agent workflows via FastMCP
 - **Performance Optimization**: Shell redirection for fastest Claude execution
 - **Real-time Streaming**: See Claude's output as it's being generated
@@ -152,6 +120,30 @@ The latest version of Claude Task Runner features significant performance improv
 - **Named Pipes**: Uses FIFO pipes for efficient streaming of Claude's output
 - **Simplified Processing**: Streamlined execution flow without unnecessary overhead
 - **Customizable Pooling**: Configure process pooling to balance performance and resource usage
+
+## Textual Dashboard
+
+The Textual dashboard provides a modern terminal user interface (TUI) with:
+
+- **Fixed Task Status Panel**: A DataTable showing all tasks with their current status, progress, and timing information
+- **Streaming Output Area**: A scrollable area showing Claude's output in real-time with markdown rendering
+- **Keyboard Navigation**: Simple keyboard shortcuts (q to quit, etc.)
+- **Color-Coded Status**: Visual indicators of task status (running, completed, failed, etc.)
+- **Auto-Scrolling**: Output automatically scrolls to show the latest content
+- **Responsive Layout**: Adapts to terminal size for optimal viewing
+
+To use the Textual dashboard:
+
+```bash
+# Using the dedicated textual command (recommended)
+python -m task_runner textual [path/to/task_list.md]
+
+# Or using the run command with textual dashboard option
+python -m task_runner run --textual-dashboard [path/to/task_list.md]
+
+# Or using the convenience script
+./run_textual.sh [path/to/task_list.md]
+```
 
 ## Quick Start
 
@@ -238,6 +230,14 @@ python -m task_runner run [options]
 
 # Using installed script
 task-runner run [options]
+
+# Using the Textual dashboard
+python -m task_runner textual [options]
+# Or
+task-runner textual [options]
+
+# Simpler option for Textual dashboard
+./run_textual.sh [path/to/task_list.md]
 ```
 
 Options:
@@ -251,14 +251,23 @@ Options:
 - `--reuse-context`: Reuse Claude processes with /clear between tasks (default: True)
 - `--no-streaming`: Disable real-time output streaming (uses simple file redirection)
 - `--json`: Output results as JSON
+- `--textual-dashboard`: Use the modern Textual-based dashboard UI
+- `--use-dashboard`: Use the interactive Rich dashboard UI
+- `--fixed-dashboard/--no-fixed-dashboard`: Enable/disable the fixed dashboard UI (enabled by default)
 
-Example with debugging enabled:
+Example with Textual dashboard and debugging:
 ```bash
 # Using module syntax
-python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
 
 # Using installed script
-task-runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+task-runner run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
+
+# Using the dedicated Textual command (same effect, cleaner interface)
+python -m task_runner textual input/sample_tasks.md --base-dir ./debug_project --debug-claude
+
+# Or simplest option with the convenience script
+./run_textual.sh input/sample_tasks.md
 ```
 
 Example with demo mode (no API usage):
